@@ -45,7 +45,7 @@ opciones_medio = [
 ]
 
 # --- PESTAÑAS (Nombre corregido) ---
-tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventarios"])
+tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
 # Función para construir la interfaz de cada hoja de forma idéntica
 def renderizar_interfaz(df, nombre_hoja):
@@ -140,7 +140,7 @@ with tab_pedidos:
 
 with tab_inventario:
     try:
-        df_inv = cargar_datos("Pedido Inventarios")
-        renderizar_interfaz(df_inv, "Pedido Inventarios")
+        df_inv = cargar_datos("Pedido Inventario")
+        renderizar_interfaz(df_inv, "Pedido Inventario")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventarios'. Detalle: {e}")
+        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventario'. Detalle: {e}")
