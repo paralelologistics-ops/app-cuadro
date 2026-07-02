@@ -2,23 +2,30 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración horizontal (wide) y en español
+# 1. Configuración horizontal y compresión de márgenes (CSS)
 st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
-# Título más pequeño y discreto
-st.markdown("### 🚀 Panel de Control Visual (Modo Demo)")
+# Este bloque de código invisible reduce drásticamente los espacios en blanco de la pantalla
+st.markdown("""
+    <style>
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+    }
+    header {visibility: hidden;}
+    </style>
+    """, unsafe_allow_html=True)
+
+# Título minúsculo
+st.caption("🚀 Panel de Control Visual (Modo Demo)")
 
 # --- BOTÓN DE ACTUALIZAR ---
 if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
-st.divider()
-
 # Conexión en modo lectura para la presentación
 conn = st.connection("gsheets", type=GSheetsConnection)
-
-# Enlace configurado automáticamente con tu ID de Sheets real
 sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
 @st.cache_data(ttl=10)
@@ -56,16 +63,13 @@ tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"]
 # Función para construir la interfaz
 def renderizar_interfaz(df, nombre_hoja):
     
-    # Mostrar siempre el último registro (encabezado más pequeño)
-    st.markdown("#### Último documento creado")
+    # Texto muy pequeño para el último documento
+    st.caption("Último documento creado:")
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
         
-    st.divider()
-    
-    # --- SISTEMA DE FILTROS MÚLTIPLES EN MENÚ DESPLEGABLE ---
-    # Esto ahorra mucho espacio visual, manteniendo el orden vertical al abrirse
-    with st.expander("🔍 Desplegar Filtros Dinámicos", expanded=False):
+    # --- SISTEMA DE FILTROS EN MENÚ DESPLEGABLE ---
+    with st.expander("🔍 Filtros"):
         columnas_disponibles = df.columns.tolist()
         
         columnas_filtro = st.multiselect(
@@ -88,7 +92,7 @@ def renderizar_interfaz(df, nombre_hoja):
                 if valores_seleccionados:
                     df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
                     
-        st.info(f"Mostrando {len(df_filtrado)} registros en pantalla.")
+        st.caption(f"Mostrando {len(df_filtrado)} registros.")
 
     # --- CONFIGURACIÓN DE COLUMNAS EDITABLES ---
     configuracion_columnas = {}
@@ -113,16 +117,14 @@ def renderizar_interfaz(df, nombre_hoja):
     # Bloquear el resto de las columnas
     columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
 
-    st.markdown("#### Tabla de Edición")
-    
-    # Altura aumentada (height=600) para que el cuadro abarque la mayor parte de la pantalla
+    # Altura llevada a 800 para dominar la pantalla
     cambios = st.data_editor(
         df_filtrado,
         disabled=columnas_bloqueadas,
         column_config=configuracion_columnas,
         hide_index=True,
         use_container_width=True,
-        height=600, 
+        height=800, 
         key=f"editor_{nombre_hoja}"
     )
 
