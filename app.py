@@ -9,7 +9,7 @@ st.title("🚀 Panel de Control Visual")
 
 # --- BOTÓN DE ACTUALIZAR GIGANTE ---
 # Este botón fuerza a la app a borrar la memoria y leer el cuadro original de nuevo
-if st.button("🔄 ACTUALIZAR DATOS DESDE SHEETS", type="primary", use_container_width=True):
+if st.button("🔄 ACTUALIZAR DATOS", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
