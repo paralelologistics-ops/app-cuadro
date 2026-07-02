@@ -5,7 +5,8 @@ import pandas as pd
 # 1. Configuración horizontal (wide) y en español
 st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
-st.title("🚀 Panel de Control Visual (Modo Demo)")
+# Título más pequeño y discreto
+st.markdown("### 🚀 Panel de Control Visual (Modo Demo)")
 
 # --- BOTÓN DE ACTUALIZAR ---
 if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
@@ -25,15 +26,15 @@ def cargar_datos(pestaña):
     df = conn.read(spreadsheet=sheet_url, worksheet=pestaña)
     df = df.fillna("") 
     
-    # MEJORA: Recortar la tabla para mostrar solo hasta "Fecha de Envío"
+    # Recortar la tabla para mostrar solo hasta "Fecha de Envío"
     if "Fecha de Envío" in df.columns:
         columnas = list(df.columns)
         indice = columnas.index("Fecha de Envío")
-        df = df.iloc[:, :indice+1] # Trae todas las filas, pero solo las columnas hasta ese índice
+        df = df.iloc[:, :indice+1]
         
     return df.astype(str)
 
-# 2. Listas de opciones exactas solicitadas
+# 2. Listas de opciones
 opciones_urgencia = ["Alta", "Normal", "SOS"]
 opciones_estado = [
     "Ingresado", "En corte", "En confección", "Proceso plancha", 
@@ -49,44 +50,45 @@ opciones_medio = [
     "ByS group S.A.S", "Amorella", "Atelier"
 ]
 
-# --- PESTAÑAS (Nombre corregido a singular) ---
+# --- PESTAÑAS ---
 tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
 # Función para construir la interfaz
 def renderizar_interfaz(df, nombre_hoja):
     
-    # Mostrar siempre el último registro en la parte superior
-    st.subheader("Último documento creado")
+    # Mostrar siempre el último registro (encabezado más pequeño)
+    st.markdown("#### Último documento creado")
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
         
     st.divider()
     
-    # --- SISTEMA DE FILTROS MÚLTIPLES ---
-    st.subheader("🔍 Filtros Dinámicos")
-    columnas_disponibles = df.columns.tolist()
-    
-    columnas_filtro = st.multiselect(
-        "1. Selecciona las columnas por las que deseas filtrar:", 
-        columnas_disponibles, 
-        key=f"cols_{nombre_hoja}"
-    )
-    
-    df_filtrado = df.copy()
-    
-    if columnas_filtro:
-        for col in columnas_filtro:
-            opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
-            valores_seleccionados = st.multiselect(
-                f"2. Elige las opciones para '{col}':", 
-                opciones_unicas, 
-                key=f"val_{nombre_hoja}_{col}"
-            )
-            
-            if valores_seleccionados:
-                df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
+    # --- SISTEMA DE FILTROS MÚLTIPLES EN MENÚ DESPLEGABLE ---
+    # Esto ahorra mucho espacio visual, manteniendo el orden vertical al abrirse
+    with st.expander("🔍 Desplegar Filtros Dinámicos", expanded=False):
+        columnas_disponibles = df.columns.tolist()
+        
+        columnas_filtro = st.multiselect(
+            "1. Selecciona las columnas por las que deseas filtrar:", 
+            columnas_disponibles, 
+            key=f"cols_{nombre_hoja}"
+        )
+        
+        df_filtrado = df.copy()
+        
+        if columnas_filtro:
+            for col in columnas_filtro:
+                opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
+                valores_seleccionados = st.multiselect(
+                    f"2. Elige las opciones para '{col}':", 
+                    opciones_unicas, 
+                    key=f"val_{nombre_hoja}_{col}"
+                )
                 
-    st.info(f"Mostrando {len(df_filtrado)} registros en pantalla.")
+                if valores_seleccionados:
+                    df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
+                    
+        st.info(f"Mostrando {len(df_filtrado)} registros en pantalla.")
 
     # --- CONFIGURACIÓN DE COLUMNAS EDITABLES ---
     configuracion_columnas = {}
@@ -111,14 +113,16 @@ def renderizar_interfaz(df, nombre_hoja):
     # Bloquear el resto de las columnas
     columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
 
-    st.subheader("Tabla de Edición")
+    st.markdown("#### Tabla de Edición")
     
+    # Altura aumentada (height=600) para que el cuadro abarque la mayor parte de la pantalla
     cambios = st.data_editor(
         df_filtrado,
         disabled=columnas_bloqueadas,
         column_config=configuracion_columnas,
         hide_index=True,
         use_container_width=True,
+        height=600, 
         key=f"editor_{nombre_hoja}"
     )
 
