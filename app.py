@@ -2,14 +2,14 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración vertical y en español
-st.set_page_config(layout="centered", page_title="Control de Pedidos", page_icon="📊")
+# 1. Configuración horizontal (wide) y en español
+st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
 st.title("🚀 Panel de Control Visual")
 
-# --- BOTÓN DE ACTUALIZAR GIGANTE ---
-# Este botón fuerza a la app a borrar la memoria y leer el cuadro original de nuevo
-if st.button("🔄 ACTUALIZAR DATOS", type="primary", use_container_width=True):
+# --- BOTÓN DE ACTUALIZAR ---
+# Modificado para que diga exactamente lo solicitado
+if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
@@ -18,7 +18,7 @@ st.divider()
 # Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 # ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
-sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
+sheet_url = "https://docs.google.com/spreadsheets/d/TU_ID_DE_CUADRO_REAL/edit" 
 
 @st.cache_data(ttl=10)
 def cargar_datos(pestaña):
@@ -44,8 +44,8 @@ opciones_medio = [
     "ByS group S.A.S", "Amorella", "Atelier"
 ]
 
-# --- PESTAÑAS ---
-tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
+# --- PESTAÑAS (Nombre corregido) ---
+tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventarios"])
 
 # Función para construir la interfaz de cada hoja de forma idéntica
 def renderizar_interfaz(df, nombre_hoja):
@@ -140,7 +140,7 @@ with tab_pedidos:
 
 with tab_inventario:
     try:
-        df_inv = cargar_datos("Pedido Inventario")
-        renderizar_interfaz(df_inv, "Pedido Inventario")
+        df_inv = cargar_datos("Pedido Inventarios")
+        renderizar_interfaz(df_inv, "Pedido Inventarios")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventario'. Detalle: {e}")
+        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventarios'. Detalle: {e}")
