@@ -2,10 +2,10 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración horizontal y compresión de márgenes (CSS)
+# 1. Configuración de página en español y horizontal
 st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
-# Bloque de diseño para eliminar espacios en blanco innecesarios arriba
+# Código oculto para reducir márgenes y optimizar la pantalla para el cuadro
 st.markdown("""
     <style>
     .block-container {
@@ -16,7 +16,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Título minúsculo
+# Título en miniatura
 st.caption("🚀 Panel de Control Visual (Modo Demo)")
 
 # --- BOTÓN DE ACTUALIZAR ---
@@ -24,7 +24,7 @@ if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
-# Conexión con tu ID de Sheets real
+# Conexión con tu ID de Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
@@ -41,7 +41,7 @@ def cargar_datos(pestaña):
         
     return df.astype(str)
 
-# Opciones asignadas para las listas desplegables
+# Opciones asignadas para las listas desplegables (Todo en Español)
 opciones_urgencia = ["Alta", "Normal", "SOS"]
 opciones_estado = [
     "Ingresado", "En corte", "En confección", "Proceso plancha", 
@@ -51,18 +51,18 @@ opciones_estado = [
 ]
 opciones_enviado = ["Enviado", "No Enviado"]
 
-# --- PESTAÑAS ---
+# --- PESTAÑAS EN ESPAÑOL ---
 tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
 # Función para construir la interfaz
 def renderizar_interfaz(df, nombre_hoja):
     
-    # Vista del último registro en miniatura
+    # Vista del último registro en miniatura para control de consecutivo
     st.caption("Último documento creado:")
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
         
-    # --- SISTEMA DE FILTROS (Solo para visualización) ---
+    # --- SISTEMA DE FILTROS (Exclusivo para la vista en pantalla) ---
     with st.expander("🔍 Filtros"):
         columnas_disponibles = df.columns.tolist()
         
@@ -88,7 +88,7 @@ def renderizar_interfaz(df, nombre_hoja):
                     
         st.caption(f"Mostrando {len(df_filtrado)} registros.")
 
-    # --- MEJORA: CONFIGURACIÓN EXCLUSIVA DE LAS 4 COLUMNAS EDITABLES ---
+    # --- CONFIGURACIÓN DE LAS 4 COLUMNAS EDITABLES ---
     configuracion_columnas = {}
     columnas_editables = []
 
@@ -105,15 +105,15 @@ def renderizar_interfaz(df, nombre_hoja):
         columnas_editables.append("Urgencia")
         
     if "Orden" in df.columns:
-        # Genera las opciones dinámicamente con los valores existentes en la columna "Orden"
+        # Crea opciones automáticas basadas en lo que ya está escrito en la columna Orden
         opciones_orden = sorted(list(set([x for x in df["Orden"].unique() if str(x).strip() != ""])))
         configuracion_columnas["Orden"] = st.column_config.SelectboxColumn("Orden", options=opciones_orden)
         columnas_editables.append("Orden")
 
-    # Bloquear absolutamente todo el resto de columnas del cuadro
+    # Bloquear el resto de columnas para proteger la información original
     columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
 
-    # El cuadro abarca 800 píxeles de alto para dominar la pantalla
+    # Cuadro principal maximizado a 800 píxeles de alto
     cambios = st.data_editor(
         df_filtrado,
         disabled=columnas_bloqueadas,
@@ -124,7 +124,7 @@ def renderizar_interfaz(df, nombre_hoja):
         key=f"editor_{nombre_hoja}"
     )
 
-    # Botón de Guardar simulado para la presentación
+    # Botón de simulación para guardar
     if st.button(f"💾 Guardar Cambios en {nombre_hoja}", type="primary", use_container_width=True):
         st.success(f"¡Simulación exitosa! En la versión final, los cambios de {nombre_hoja} actualizarán tu cuadro original en tiempo real.")
 
