@@ -2,163 +2,137 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# Configuración estética de la página (Diseño limpio y centrado)
-st.set_page_config(layout="wide", page_title="Control de Pedidos e Inventario", page_icon="📊")
+# 1. Configuración vertical y en español
+st.set_page_config(layout="centered", page_title="Control de Pedidos", page_icon="📊")
 
-# Estilos visuales personalizados para los botones de filtro y diseño
-st.markdown("""
-    <style>
-    .main-title { font-size: 28px; font-weight: bold; color: #1E293B; margin-bottom: 20px; }
-    .stButton>button { width: 100%; border-radius: 8px; font-weight: 500; }
-    </style>
-""", unsafe_allow_html=True)
+st.title("🚀 Panel de Control Visual")
 
-st.markdown('<div class="main-title">🚀 Panel de Control Visual</div>', unsafe_allow_html=True)
-
-# Conexión con tu Google Sheet central
+# Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
-sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit"
+# ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
+sheet_url = "https://docs.google.com/spreadsheets/d/TU_ID_DE_CUADRO_REAL/edit" 
 
-# Función para cargar datos de una pestaña específica de forma limpia
-@st.cache_data(ttl=10) # Se refresca cada 10 segundos automáticamente para captar nuevos formularios
+@st.cache_data(ttl=10)
 def cargar_datos(pestaña):
-    return conn.read(spreadsheet=sheet_url, worksheet=pestaña)
+    df = conn.read(spreadsheet=sheet_url, worksheet=pestaña)
+    # Reemplazar valores nulos (None) por espacios en blanco
+    df = df.fillna("") 
+    # Asegurar que todo se lea como texto para evitar errores visuales
+    return df.astype(str)
 
-# --- CREACIÓN DE LAS DOS PESTAÑAS EN LA APP ---
-tab_pedidos, tab_inventario = st.tabs(["📋 Hojas de Pedidos", "📦 Pedido de Inventario"])
+# 2. Listas de opciones exactas solicitadas
+opciones_urgencia = ["Alta", "Normal", "SOS"]
+opciones_estado = [
+    "Ingresado", "En corte", "En confección", "Proceso plancha", 
+    "Proceso Ojal/Boton", "En revisión", "Empacado", "Esperando material", 
+    "En Espera", "Cancelado", "Pasa a Inventario", "Completado", "De Inventario", 
+    "Listo pero Cancelado", "Inventario Apto", "Inventario Multimarca", "Inventario Manuela"
+]
+opciones_enviado = ["Enviado", "No Enviado"]
+opciones_medio = [
+    "Pag Web", "Instagram", "Whatsapp", "Benditta", "Emprenditoria", 
+    "Ideal Design", "Sandra Ayala", "Mar de Oro", "Ginebra", "La Rossada", 
+    "Pikanela", "Muestra", "Canje", "Garantia", "Cambio", "Daniela Portillo", 
+    "ByS group S.A.S", "Amorella", "Atelier"
+]
 
-# =========================================================================
-# PESTAÑA 1: PEDIDOS
-# =========================================================================
-with tab_pedidos:
-    st.write("Visualiza, filtra y gestiona los estados de los pedidos entrantes.")
+# --- PESTAÑAS ---
+tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido de Inventario"])
+
+# Función para construir la interfaz de cada hoja de forma idéntica
+def renderizar_interfaz(df, nombre_hoja):
     
+    # Mostrar siempre el último registro en la parte superior para seguimiento del consecutivo
+    st.subheader("Último documento creado")
+    if not df.empty:
+        st.dataframe(df.tail(1), hide_index=True)
+        
+    st.divider()
+    
+    # --- SISTEMA DE FILTROS MÚLTIPLES ---
+    st.subheader("🔍 Filtros Dinámicos")
+    columnas_disponibles = df.columns.tolist()
+    
+    # 1. Escoger por cuál columna filtrar
+    columnas_filtro = st.multiselect(
+        "1. Selecciona las columnas por las que deseas filtrar:", 
+        columnas_disponibles, 
+        key=f"cols_{nombre_hoja}"
+    )
+    
+    df_filtrado = df.copy()
+    
+    # 2. Escoger las opciones dentro de cada columna
+    if columnas_filtro:
+        for col in columnas_filtro:
+            # Extraer solo las opciones que existan y no estén en blanco
+            opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
+            valores_seleccionados = st.multiselect(
+                f"2. Elige las opciones para '{col}':", 
+                opciones_unicas, 
+                key=f"val_{nombre_hoja}_{col}"
+            )
+            
+            # Aplicar filtro simultáneo
+            if valores_seleccionados:
+                df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
+                
+    st.info(f"Mostrando {len(df_filtrado)} registros en pantalla.")
+
+    # --- CONFIGURACIÓN DE COLUMNAS EDITABLES ---
+    configuracion_columnas = {}
+    columnas_editables = []
+
+    # Validamos que las columnas existan en la hoja para convertirlas en listas desplegables
+    if "Estado" in df.columns:
+        configuracion_columnas["Estado"] = st.column_config.SelectboxColumn("Estado", options=opciones_estado)
+        columnas_editables.append("Estado")
+    if "Urgencia" in df.columns:
+        configuracion_columnas["Urgencia"] = st.column_config.SelectboxColumn("Urgencia", options=opciones_urgencia)
+        columnas_editables.append("Urgencia")
+    if "Enviado" in df.columns:
+        configuracion_columnas["Enviado"] = st.column_config.SelectboxColumn("Enviado", options=opciones_enviado)
+        columnas_editables.append("Enviado")
+    if "Medio" in df.columns:
+        configuracion_columnas["Medio"] = st.column_config.SelectboxColumn("Medio", options=opciones_medio)
+        columnas_editables.append("Medio")
+    if "Observaciones" in df.columns:
+        configuracion_columnas["Observaciones"] = st.column_config.TextColumn("Observaciones")
+        columnas_editables.append("Observaciones")
+
+    # Bloquear el resto de las columnas para evitar daños a los datos de tus formularios
+    columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
+
+    st.subheader("Tabla de Edición")
+    
+    cambios = st.data_editor(
+        df_filtrado,
+        disabled=columnas_bloqueadas,
+        column_config=configuracion_columnas,
+        hide_index=True,
+        use_container_width=True,
+        key=f"editor_{nombre_hoja}"
+    )
+
+    # Botón para guardar
+    if st.button(f"💾 Guardar Cambios en {nombre_hoja}", type="primary", use_container_width=True):
+        df.update(cambios)
+        conn.update(spreadsheet=sheet_url, worksheet=nombre_hoja, data=df)
+        st.success(f"¡Los datos de {nombre_hoja} se actualizaron en tu cuadro original!")
+        st.cache_data.clear()
+        st.rerun()
+
+# --- CARGA DE DATOS POR PESTAÑA ---
+with tab_pedidos:
     try:
         df_pedidos = cargar_datos("Pedidos")
-        
-        # Asegurar que existan las columnas de control si no están creadas
-        if "Estado" not in df_pedidos.columns: df_pedidos["Estado"] = "Pendiente"
-        if "Observaciones" not in df_pedidos.columns: df_pedidos["Observaciones"] = ""
-        
-        # --- BOTONES DE FILTRO RÁPIDO ---
-        st.write("**Filtrar rápidamente por Estado:**")
-        col_b1, col_b2, col_b3, col_b4 = st.columns(4)
-        
-        # Usamos el estado de la sesión de Streamlit para recordar qué botón se presionó
-        if "filtro_pedidos" not in st.session_state:
-            st.session_state.filtro_pedidos = "Todos"
-            
-        with col_b1:
-            if st.button("📋 Ver Todos", key="btn_p_todos"): st.session_state.filtro_pedidos = "Todos"
-        with col_b2:
-            if st.button("⏳ Solo Pendientes", key="btn_p_pend"): st.session_state.filtro_pedidos = "Pendiente"
-        with col_b3:
-            if st.button("⚙️ En Preparación", key="btn_p_prep"): st.session_state.filtro_pedidos = "En Preparación"
-        with col_b4:
-            if st.button("✅ Despachados", key="btn_p_desp"): st.session_state.filtro_pedidos = "Despachado"
-            
-        # Aplicar el filtro seleccionado por los botones al cuadro de datos
-        if st.session_state.filtro_pedidos != "Todos":
-            df_filtrado = df_pedidos[df_pedidos["Estado"] == st.session_state.filtro_pedidos]
-        else:
-            df_filtrado = df_pedidos
-
-        st.info(f"Mostrando: **{st.session_state.filtro_pedidos}** ({len(df_filtrado)} registros)")
-
-        # --- TABLA INTERACTIVA ESTÉTICA ---
-        # Definimos qué columnas NO se pueden tocar (las que vienen del formulario)
-        columnas_bloqueadas = [col for col in df_pedidos.columns if col not in ["Estado", "Observaciones"]]
-        
-        # El data_editor permite modificar celdas como un Excel pero de forma controlada
-        cambios_pedidos = st.data_editor(
-            df_filtrado,
-            disabled=columnas_bloqueadas, # Bloquea los datos del formulario para protegerlos
-            column_config={
-                "Estado": st.column_config.SelectboxColumn(
-                    "Estado Actual",
-                    options=["Pendiente", "En Preparación", "Despachado", "Cancelado"],
-                    required=True
-                ),
-                "Observaciones": st.column_config.TextColumn("Observaciones / Notas Internas", width="large")
-            },
-            hide_index=True,
-            use_container_width=True,
-            key="editor_pedidos"
-        )
-        
-        # --- BOTÓN PARA GUARDAR MODIFICACIONES ---
-        if st.button("💾 Guardar Cambios en Pedidos", type="primary"):
-            # Reincorporar las filas editadas al dataframe original respetando sus posiciones reales
-            df_pedidos.update(cambios_pedidos)
-            conn.update(spreadsheet=sheet_url, worksheet="Pedidos", data=df_pedidos)
-            st.success("¡Cuadro de Pedidos actualizado con éxito en Sheets!")
-            st.cache_data.clear() # Limpia caché para forzar la lectura fresca de datos
-            st.rerun()
-
+        renderizar_interfaz(df_pedidos, "Pedidos")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama exactamente 'Pedidos'. Error: {e}")
+        st.error(f"Asegúrate de que la pestaña se llama 'Pedidos'. Detalle: {e}")
 
-
-# =========================================================================
-# PESTAÑA 2: PEDIDO DE INVENTARIO
-# =========================================================================
 with tab_inventario:
-    st.write("Visualiza y gestiona las solicitudes y movimientos de inventario.")
-    
     try:
         df_inv = cargar_datos("Pedido de Inventario")
-        
-        if "Estado" not in df_inv.columns: df_inv["Estado"] = "Pendiente"
-        if "Observaciones" not in df_inv.columns: df_inv["Observaciones"] = ""
-        
-        # --- BOTONES DE FILTRO RÁPIDO PARA INVENTARIO ---
-        st.write("**Filtrar rápidamente por Estado:**")
-        col_i1, col_i2, col_i3, col_i4 = st.columns(4)
-        
-        if "filtro_inv" not in st.session_state:
-            st.session_state.filtro_inv = "Todos"
-            
-        with col_i1:
-            if st.button("📦 Ver Todo el Inventario", key="btn_i_todos"): st.session_state.filtro_inv = "Todos"
-        with col_i2:
-            if st.button("🛑 Por Surtir / Pendiente", key="btn_i_pend"): st.session_state.filtro_inv = "Pendiente"
-        with col_i3:
-            if st.button("🚚 En Camino", key="btn_i_cam"): st.session_state.filtro_inv = "En Camino"
-        with col_i4:
-            if st.button("🟢 Finalizado / Recibido", key="btn_i_fin"): st.session_state.filtro_inv = "Finalizado"
-            
-        if st.session_state.filtro_inv != "Todos":
-            df_inv_filtrado = df_inv[df_inv["Estado"] == st.session_state.filtro_inv]
-        else:
-            df_inv_filtrado = df_inv
-
-        st.info(f"Mostrando: **{st.session_state.filtro_inv}** ({len(df_inv_filtrado)} registros)")
-
-        # --- TABLA INTERACTIVA ---
-        columnas_bloqueadas_inv = [col for col in df_inv.columns if col not in ["Estado", "Observaciones"]]
-        
-        cambios_inv = st.data_editor(
-            df_inv_filtrado,
-            disabled=columnas_bloqueadas_inv,
-            column_config={
-                "Estado": st.column_config.SelectboxColumn(
-                    "Estado Inventario",
-                    options=["Pendiente", "En Camino", "Finalizado"],
-                    required=True
-                ),
-                "Observaciones": st.column_config.TextColumn("Notas de Inventario", width="large")
-            },
-            hide_index=True,
-            use_container_width=True,
-            key="editor_inventario"
-        )
-        
-        if st.button("💾 Guardar Cambios en Inventario", type="primary"):
-            df_inv.update(cambios_inv)
-            conn.update(spreadsheet=sheet_url, worksheet="Pedido de Inventario", data=df_inv)
-            st.success("¡Cuadro de Inventario actualizado con éxito en Sheets!")
-            st.cache_data.clear()
-            st.rerun()
-
+        renderizar_interfaz(df_inv, "Pedido de Inventario")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama exactamente 'Pedido de Inventario'. Error: {e}")
+        st.error(f"Asegúrate de que la pestaña se llama 'Pedido de Inventario'. Detalle: {e}")
