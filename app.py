@@ -18,7 +18,7 @@ st.divider()
 # Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 # ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
-sheet_url = "https://docs.google.com/spreadsheets/d/TU_ID_DE_CUADRO_REAL/edit" 
+sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
 @st.cache_data(ttl=10)
 def cargar_datos(pestaña):
@@ -45,7 +45,7 @@ opciones_medio = [
 ]
 
 # --- PESTAÑAS ---
-tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido de Inventario"])
+tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
 # Función para construir la interfaz de cada hoja de forma idéntica
 def renderizar_interfaz(df, nombre_hoja):
@@ -140,7 +140,7 @@ with tab_pedidos:
 
 with tab_inventario:
     try:
-        df_inv = cargar_datos("Pedido de Inventario")
-        renderizar_interfaz(df_inv, "Pedido de Inventario")
+        df_inv = cargar_datos("Pedido Inventario")
+        renderizar_interfaz(df_inv, "Pedido Inventario")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama 'Pedido de Inventario'. Detalle: {e}")
+        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventario'. Detalle: {e}")
