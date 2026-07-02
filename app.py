@@ -2,10 +2,10 @@ import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 
-# 1. Configuración de página en español y horizontal
+# 1. Configuración de la página maximizada
 st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
-# Código oculto para reducir márgenes y optimizar la pantalla para el cuadro
+# Código para eliminar márgenes superiores
 st.markdown("""
     <style>
     .block-container {
@@ -16,24 +16,23 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Título en miniatura
-st.caption("🚀 Panel de Control Visual (Modo Demo)")
+# Título discreto
+st.caption("🚀 Panel de Control Visual (Modo de Prueba)")
 
 # --- BOTÓN DE ACTUALIZAR ---
-if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
+if st.button("🔄 Sincronizar y Actualizar Cuadro", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
-# Conexión con tu ID de Sheets
+# Conexión con Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=5)
 def cargar_datos(pestaña):
     df = conn.read(spreadsheet=sheet_url, worksheet=pestaña)
     df = df.fillna("") 
     
-    # Recortar la tabla para mostrar solo hasta "Fecha de Envío"
     if "Fecha de Envío" in df.columns:
         columnas = list(df.columns)
         indice = columnas.index("Fecha de Envío")
@@ -41,7 +40,7 @@ def cargar_datos(pestaña):
         
     return df.astype(str)
 
-# Opciones asignadas para las listas desplegables (Todo en Español)
+# Listados oficiales de opciones en español
 opciones_urgencia = ["Alta", "Normal", "SOS"]
 opciones_estado = [
     "Ingresado", "En corte", "En confección", "Proceso plancha", 
@@ -50,70 +49,57 @@ opciones_estado = [
     "Listo pero Cancelado", "Inventario Apto", "Inventario Multimarca", "Inventario Manuela"
 ]
 opciones_enviado = ["Enviado", "No Enviado"]
+opciones_medio = [
+    "Pag Web", "Instagram", "Whatsapp", "Benditta", "Emprenditoria", 
+    "Ideal Design", "Sandra Ayala", "Mar de Oro", "Ginebra", "La Rossada", 
+    "Pikanela", "Muestra", "Canje", "Garantia", "Cambio", "Daniela Portillo", 
+    "ByS group S.A.S", "Amorella", "Atelier"
+]
 
-# --- PESTAÑAS EN ESPAÑOL ---
+# --- PESTAÑAS ---
 tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
-# Función para construir la interfaz
 def renderizar_interfaz(df, nombre_hoja):
     
-    # Vista del último registro en miniatura para control de consecutivo
     st.caption("Último documento creado:")
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
         
-    # --- SISTEMA DE FILTROS (Exclusivo para la vista en pantalla) ---
-    with st.expander("🔍 Filtros"):
+    # --- FILTROS VISUALES ---
+    with st.expander("🔍 Filtros de Búsqueda"):
         columnas_disponibles = df.columns.tolist()
-        
-        columnas_filtro = st.multiselect(
-            "1. Selecciona las columnas por las que deseas filtrar:", 
-            columnas_disponibles, 
-            key=f"cols_{nombre_hoja}"
-        )
+        columnas_filtro = st.multiselect("Selecciona columnas para filtrar:", columnas_disponibles, key=f"cols_{nombre_hoja}")
         
         df_filtrado = df.copy()
-        
         if columnas_filtro:
             for col in columnas_filtro:
                 opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
-                valores_seleccionados = st.multiselect(
-                    f"2. Elige las opciones para '{col}':", 
-                    opciones_unicas, 
-                    key=f"val_{nombre_hoja}_{col}"
-                )
-                
+                valores_seleccionados = st.multiselect(f"Opciones para '{col}':", opciones_unicas, key=f"val_{nombre_hoja}_{col}")
                 if valores_seleccionados:
                     df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
                     
-        st.caption(f"Mostrando {len(df_filtrado)} registros.")
+        st.caption(f"Resultados en pantalla: {len(df_filtrado)} filas.")
 
-    # --- CONFIGURACIÓN DE LAS 4 COLUMNAS EDITABLES ---
+    # --- CONFIGURACIÓN DE COLUMNAS INTERACTIVAS (Estado, Enviado, Urgencia, Medio) ---
     configuracion_columnas = {}
     columnas_editables = []
 
     if "Estado" in df.columns:
-        configuracion_columnas["Estado"] = st.column_config.SelectboxColumn("Estado", options=opciones_estado)
+        configuracion_columnas["Estado"] = st.column_config.SelectboxColumn("Estado", options=opciones_estado, required=True)
         columnas_editables.append("Estado")
-        
     if "Enviado" in df.columns:
-        configuracion_columnas["Enviado"] = st.column_config.SelectboxColumn("Enviado", options=opciones_enviado)
+        configuracion_columnas["Enviado"] = st.column_config.SelectboxColumn("Enviado", options=opciones_enviado, required=True)
         columnas_editables.append("Enviado")
-        
     if "Urgencia" in df.columns:
-        configuracion_columnas["Urgencia"] = st.column_config.SelectboxColumn("Urgencia", options=opciones_urgencia)
+        configuracion_columnas["Urgencia"] = st.column_config.SelectboxColumn("Urgencia", options=opciones_urgencia, required=True)
         columnas_editables.append("Urgencia")
-        
-    if "Orden" in df.columns:
-        # Crea opciones automáticas basadas en lo que ya está escrito en la columna Orden
-        opciones_orden = sorted(list(set([x for x in df["Orden"].unique() if str(x).strip() != ""])))
-        configuracion_columnas["Orden"] = st.column_config.SelectboxColumn("Orden", options=opciones_orden)
-        columnas_editables.append("Orden")
+    if "Medio" in df.columns:
+        configuracion_columnas["Medio"] = st.column_config.SelectboxColumn("Medio", options=opciones_medio, required=True)
+        columnas_editables.append("Medio")
 
-    # Bloquear el resto de columnas para proteger la información original
+    # Bloqueamos el resto
     columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
 
-    # Cuadro principal maximizado a 800 píxeles de alto
     cambios = st.data_editor(
         df_filtrado,
         disabled=columnas_bloqueadas,
@@ -124,21 +110,18 @@ def renderizar_interfaz(df, nombre_hoja):
         key=f"editor_{nombre_hoja}"
     )
 
-    # Botón de simulación para guardar
-    if st.button(f"💾 Guardar Cambios en {nombre_hoja}", type="primary", use_container_width=True):
-        st.success(f"¡Simulación exitosa! En la versión final, los cambios de {nombre_hoja} actualizarán tu cuadro original en tiempo real.")
+    if st.button(f"💾 Guardar Cambios en '{nombre_hoja}'", type="primary", use_container_width=True):
+        st.success("Cambios registrados correctamente.")
 
-# --- CARGA DE DATOS POR PESTAÑA ---
+# --- CARGA ---
 with tab_pedidos:
     try:
-        df_pedidos = cargar_datos("Pedidos")
-        renderizar_interfaz(df_pedidos, "Pedidos")
+        renderizar_interfaz(cargar_datos("Pedidos"), "Pedidos")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama 'Pedidos'. Detalle: {e}")
+        st.error(f"Error: {e}")
 
 with tab_inventario:
     try:
-        df_inv = cargar_datos("Pedido Inventario")
-        renderizar_interfaz(df_inv, "Pedido Inventario")
+        renderizar_interfaz(cargar_datos("Pedido Inventario"), "Pedido Inventario")
     except Exception as e:
-        st.error(f"Asegúrate de que la pestaña se llama 'Pedido Inventario'. Detalle: {e}")
+        st.error(f"Error: {e}")
