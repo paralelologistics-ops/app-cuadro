@@ -18,7 +18,7 @@ st.divider()
 # Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 # ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
-sheet_url = "https://docs.google.com/spreadsheets/d/TU_ID_DE_CUADRO_REAL/edit" 
+sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
 @st.cache_data(ttl=10)
 def cargar_datos(pestaña):
