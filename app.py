@@ -5,27 +5,32 @@ import pandas as pd
 # 1. Configuración horizontal (wide) y en español
 st.set_page_config(layout="wide", page_title="Control de Pedidos", page_icon="📊")
 
-st.title("🚀 Panel de Control Visual")
+st.title("🚀 Panel de Control Visual (Modo Demo)")
 
 # --- BOTÓN DE ACTUALIZAR ---
-# Modificado para que diga exactamente lo solicitado
 if st.button("Actualizar Cuadro", type="primary", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
 st.divider()
 
-# Conexión
+# Conexión en modo lectura para la presentación
 conn = st.connection("gsheets", type=GSheetsConnection)
-# ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
+
+# Enlace configurado automáticamente con tu ID de Sheets real
 sheet_url = "https://docs.google.com/spreadsheets/d/1iITzBsZYVoFyvUb-Pvzn-nCCiF_Za7JaugetEZVuBZA/edit" 
 
 @st.cache_data(ttl=10)
 def cargar_datos(pestaña):
     df = conn.read(spreadsheet=sheet_url, worksheet=pestaña)
-    # Reemplazar valores nulos (None) por espacios en blanco
     df = df.fillna("") 
-    # Asegurar que todo se lea como texto para evitar errores visuales
+    
+    # MEJORA: Recortar la tabla para mostrar solo hasta "Fecha de Envío"
+    if "Fecha de Envío" in df.columns:
+        columnas = list(df.columns)
+        indice = columnas.index("Fecha de Envío")
+        df = df.iloc[:, :indice+1] # Trae todas las filas, pero solo las columnas hasta ese índice
+        
     return df.astype(str)
 
 # 2. Listas de opciones exactas solicitadas
@@ -44,13 +49,13 @@ opciones_medio = [
     "ByS group S.A.S", "Amorella", "Atelier"
 ]
 
-# --- PESTAÑAS (Nombre corregido) ---
+# --- PESTAÑAS (Nombre corregido a singular) ---
 tab_pedidos, tab_inventario = st.tabs(["📋 Pedidos", "📦 Pedido Inventario"])
 
-# Función para construir la interfaz de cada hoja de forma idéntica
+# Función para construir la interfaz
 def renderizar_interfaz(df, nombre_hoja):
     
-    # Mostrar siempre el último registro en la parte superior para seguimiento del consecutivo
+    # Mostrar siempre el último registro en la parte superior
     st.subheader("Último documento creado")
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
@@ -61,7 +66,6 @@ def renderizar_interfaz(df, nombre_hoja):
     st.subheader("🔍 Filtros Dinámicos")
     columnas_disponibles = df.columns.tolist()
     
-    # 1. Escoger por cuál columna filtrar
     columnas_filtro = st.multiselect(
         "1. Selecciona las columnas por las que deseas filtrar:", 
         columnas_disponibles, 
@@ -70,10 +74,8 @@ def renderizar_interfaz(df, nombre_hoja):
     
     df_filtrado = df.copy()
     
-    # 2. Escoger las opciones dentro de cada columna
     if columnas_filtro:
         for col in columnas_filtro:
-            # Extraer solo las opciones que existan y no estén en blanco
             opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
             valores_seleccionados = st.multiselect(
                 f"2. Elige las opciones para '{col}':", 
@@ -81,7 +83,6 @@ def renderizar_interfaz(df, nombre_hoja):
                 key=f"val_{nombre_hoja}_{col}"
             )
             
-            # Aplicar filtro simultáneo
             if valores_seleccionados:
                 df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
                 
@@ -91,7 +92,6 @@ def renderizar_interfaz(df, nombre_hoja):
     configuracion_columnas = {}
     columnas_editables = []
 
-    # Validamos que las columnas existan en la hoja para convertirlas en listas desplegables
     if "Estado" in df.columns:
         configuracion_columnas["Estado"] = st.column_config.SelectboxColumn("Estado", options=opciones_estado)
         columnas_editables.append("Estado")
@@ -108,7 +108,7 @@ def renderizar_interfaz(df, nombre_hoja):
         configuracion_columnas["Observaciones"] = st.column_config.TextColumn("Observaciones")
         columnas_editables.append("Observaciones")
 
-    # Bloquear el resto de las columnas para evitar daños a los datos de tus formularios
+    # Bloquear el resto de las columnas
     columnas_bloqueadas = [c for c in df.columns if c not in columnas_editables]
 
     st.subheader("Tabla de Edición")
@@ -122,13 +122,9 @@ def renderizar_interfaz(df, nombre_hoja):
         key=f"editor_{nombre_hoja}"
     )
 
-    # Botón para guardar
+    # Botón para guardar (Modo Demo)
     if st.button(f"💾 Guardar Cambios en {nombre_hoja}", type="primary", use_container_width=True):
-        df.update(cambios)
-        conn.update(spreadsheet=sheet_url, worksheet=nombre_hoja, data=df)
-        st.success(f"¡Los datos de {nombre_hoja} se actualizaron en tu cuadro original!")
-        st.cache_data.clear()
-        st.rerun()
+        st.success(f"¡Simulación exitosa! En la versión final, los cambios de {nombre_hoja} actualizarán tu cuadro original en tiempo real.")
 
 # --- CARGA DE DATOS POR PESTAÑA ---
 with tab_pedidos:
