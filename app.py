@@ -7,6 +7,14 @@ st.set_page_config(layout="centered", page_title="Control de Pedidos", page_icon
 
 st.title("🚀 Panel de Control Visual")
 
+# --- BOTÓN DE ACTUALIZAR GIGANTE ---
+# Este botón fuerza a la app a borrar la memoria y leer el cuadro original de nuevo
+if st.button("🔄 ACTUALIZAR DATOS DESDE SHEETS", type="primary", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+st.divider()
+
 # Conexión
 conn = st.connection("gsheets", type=GSheetsConnection)
 # ¡RECUERDA PEGAR TU ENLACE REAL ABAJO!
