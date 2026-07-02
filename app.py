@@ -65,18 +65,24 @@ def renderizar_interfaz(df, nombre_hoja):
     if not df.empty:
         st.dataframe(df.tail(1), hide_index=True)
         
+    # --- FILTRO POR DEFECTO ---
+    # Filtramos para mostrar todo EXCEPTO Empacado y Cancelado
+    if "Estado" in df.columns:
+        df_filtrado = df[~df["Estado"].isin(["Empacado", "Cancelado"])]
+    else:
+        df_filtrado = df.copy()
+        
     # --- FILTROS VISUALES ---
     with st.expander("🔍 Filtros de Búsqueda"):
         columnas_disponibles = df.columns.tolist()
         columnas_filtro = st.multiselect("Selecciona columnas para filtrar:", columnas_disponibles, key=f"cols_{nombre_hoja}")
         
-        df_filtrado = df.copy()
         if columnas_filtro:
             for col in columnas_filtro:
                 opciones_unicas = [x for x in df[col].unique() if str(x).strip() != ""]
                 valores_seleccionados = st.multiselect(f"Opciones para '{col}':", opciones_unicas, key=f"val_{nombre_hoja}_{col}")
                 if valores_seleccionados:
-                    df_filtrado = df_filtrado[df_filtrado[col].isin(valores_seleccionados)]
+                    df_filtrado = df[df[col].isin(valores_seleccionados)]
                     
         st.caption(f"Resultados en pantalla: {len(df_filtrado)} filas.")
 
